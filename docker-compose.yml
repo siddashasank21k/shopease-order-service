@@ -1,0 +1,44 @@
+﻿services:
+  order_mysql:
+    image: mysql:8.0
+    container_name: shopease_order_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: shopease_order_db
+      MYSQL_USER: shopease_order_user
+      MYSQL_PASSWORD: order_secure_password_2026
+    ports:
+      - "3312:3306"
+    volumes:
+      - order_mysql_data:/var/lib/mysql
+    networks:
+      - order_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  order_service:
+    build: .
+    container_name: shopease_order_container
+    restart: always
+    ports:
+      - "8004:8004"
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - order_net
+    depends_on:
+      order_mysql:
+        condition: service_healthy
+
+volumes:
+  order_mysql_data:
+
+networks:
+  order_net:
+    driver: bridge
